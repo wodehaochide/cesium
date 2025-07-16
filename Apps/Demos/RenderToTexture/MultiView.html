@@ -34,7 +34,6 @@
   <body>
     <div id="cesiumContainer"></div>
     <script type="module">
-      // import IndexedDbCache from "../Lib/indexDbCache.js";
       import * as Cesium from "../../../../Build/CesiumUnminified/index.js";
       window.CESIUM_BASE_URL = "../../../../Build/CesiumUnminified/";
       window.Cesium = Cesium;
@@ -43,9 +42,15 @@
 
       const WIDTH = 512;
 
+      const ViewType = {
+        Overlooking: "Overlooking",
+        Telescope: "Telescope",
+      };
+
       class CustomRenderer {
-        constructor(viewer) {
+        constructor(viewer, type) {
           this.viewer = viewer;
+          this.type = type;
           this.view = undefined;
           this.viewport = undefined;
           this.camera = undefined;
@@ -56,7 +61,7 @@
           this.initialized = false;
           this.renderPassState = undefined;
           this.drawPassState = undefined;
-
+          // 将使用自定义渲染循环
           viewer.cesiumWidget.useDefaultRenderLoop = false;
 
           this._initialize(viewer.scene.context);
@@ -101,10 +106,8 @@
         _updateCamera(originCamera) {
           this.camera.position = originCamera.position.clone();
 
-          if (
-            this.camera.frustum instanceof Cesium.OrthographicOffCenterFrustum
-          ) {
-            // 俯瞰
+          if (this.type === ViewType.Overlooking) {
+            // 俯瞰效果，计算俯瞰相机位置和姿态
             const enuMatrix = Cesium.Transforms.eastNorthUpToFixedFrame(
               this.camera.position,
             );
@@ -138,6 +141,7 @@
             frustum.bottom = -halfRange;
             frustum.top = halfRange;
           } else {
+            // 其他效果，保持相机方向和姿态
             this.camera.direction = originCamera.direction.clone();
             this.camera.up = originCamera.up.clone();
             this.camera.right = originCamera.right.clone();
@@ -145,6 +149,7 @@
         }
 
         _render(scene) {
+          /** 参考Scene中内部render方法 */
           const frameState = scene._frameState;
 
           const context = scene.context;
@@ -238,7 +243,7 @@
         }
 
         _initialize(context) {
-          this._createCamera("");
+          this._createCamera(this.type);
 
           this.viewport = new Cesium.BoundingRectangle(0, 0, WIDTH, WIDTH);
 
@@ -280,8 +285,6 @@
             pass: Cesium.Pass.OPAQUE,
           });
 
-          this.drawCommand = this._createDrawCommands(context);
-
           this.renderPassState = new Cesium.PassState(context);
           this.renderPassState.viewport = this.viewport;
           this.renderPassState.framebuffer = this.framebuffer;
@@ -289,13 +292,14 @@
           this.view.passState = this.renderPassState;
 
           this.drawPassState = new Cesium.PassState(context);
+          this.drawCommand = this._createDrawCommands(context);
 
           this.initialized = true;
         }
 
         _createCamera(type) {
-          const camera = new Cesium.Camera(this.viewer.scene);
-          if (type === "orthographic") {
+          const camera = Cesium.Camera.clone(this.viewer.camera);
+          if (type === ViewType.Overlooking) {
             const halfRange = 100;
             camera.frustum = new Cesium.OrthographicOffCenterFrustum({
               left: -halfRange,
@@ -305,9 +309,9 @@
               near: 0.1,
               far: 1e10,
             });
-          } else {
+          } else if (type === ViewType.Telescope) {
             camera.frustum = this.viewer.camera.frustum.clone();
-            camera.frustum.fov = Cesium.Math.toRadians(5); // 望远镜
+            camera.frustum.fov = Cesium.Math.toRadians(5);
           }
 
           camera.name = "custom";
@@ -315,26 +319,14 @@
           this.camera = camera;
         }
 
-        // 绘制到屏幕右上角
+        // 绘制到屏幕
         _createDrawCommands(context) {
-          const offsetx = -1;
-          const offsety = -1;
-
           const drawGeometry = new Cesium.Geometry({
             attributes: {
               position: new Cesium.GeometryAttribute({
                 componentDatatype: Cesium.ComponentDatatype.FLOAT,
                 componentsPerAttribute: 2,
-                values: new Float64Array([
-                  offsetx,
-                  offsety,
-                  1,
-                  offsety,
-                  1,
-                  1,
-                  offsetx,
-                  1,
-                ]),
+                values: new Float64Array([-1, -1, 1, -1, 1, 1, -1, 1]),
               }),
               st: new Cesium.GeometryAttribute({
                 componentDatatype: Cesium.ComponentDatatype.FLOAT,
@@ -377,7 +369,7 @@
 
           const drawCommand = new Cesium.DrawCommand({
             modelMatrix: Cesium.Matrix4.IDENTITY,
-            pass: Cesium.Pass.OPAQUE,
+            pass: Cesium.Pass.OVERLAY,
             shaderProgram: shaderProgram,
             renderState: Cesium.RenderState.fromCache({
               depthTest: {
@@ -408,7 +400,7 @@
       const viewer = new Cesium.Viewer("cesiumContainer");
       window._viewer = viewer;
 
-      const renderer = new CustomRenderer(viewer);
+      const renderer = new CustomRenderer(viewer, ViewType.Telescope);
       renderer.start();
 
       Cesium.createOsmBuildingsAsync().then((tileset) => {
