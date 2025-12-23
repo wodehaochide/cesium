@@ -46,7 +46,7 @@ function PrimitiveRenderResources(nodeRenderResources, runtimePrimitive) {
    * The vertex attributes. This is shallow cloned from the node render
    * resources as the primitive will add additional properties.
    *
-   * @type {Object[]}
+   * @type {object[]}
    * @readonly
    *
    * @private
@@ -235,7 +235,7 @@ function PrimitiveRenderResources(nodeRenderResources, runtimePrimitive) {
   const positionMinMax = ModelUtility.getPositionMinMax(
     primitive,
     this.runtimeNode.instancingTranslationMin,
-    this.runtimeNode.instancingTranslationMax
+    this.runtimeNode.instancingTranslationMax,
   );
 
   /**
@@ -269,7 +269,7 @@ function PrimitiveRenderResources(nodeRenderResources, runtimePrimitive) {
   this.boundingSphere = BoundingSphere.fromCornerPoints(
     this.positionMin,
     this.positionMax,
-    new BoundingSphere()
+    new BoundingSphere(),
   );
 
   /**

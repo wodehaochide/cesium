@@ -32,6 +32,8 @@ import VertexAttributeSemantic from "./VertexAttributeSemantic.js";
 import GltfGpmLoader from "./Model/Extensions/Gpm/GltfGpmLoader.js";
 import GltfMeshPrimitiveGpmLoader from "./Model/Extensions/Gpm/GltfMeshPrimitiveGpmLoader.js";
 import oneTimeWarning from "../Core/oneTimeWarning.js";
+import addAllToArray from "../Core/addAllToArray.js";
+import getMeshPrimitives from "./getMeshPrimitives.js";
 
 const {
   Attribute,
@@ -1439,13 +1441,18 @@ function loadIndices(
   loader,
   accessorId,
   primitive,
-  draco,
   hasFeatureIds,
   needsPostProcessing,
   frameState,
 ) {
   const accessor = loader.gltfJson.accessors[accessorId];
   const bufferViewId = accessor.bufferView;
+  // Infer compression / extensions directly from the glTF primitive instead of passing in flags
+  const extensions = primitive.extensions ?? Frozen.EMPTY_OBJECT;
+  const draco = extensions.KHR_draco_mesh_compression;
+  const hasEdgeVisibility = defined(
+    extensions.EXT_mesh_primitive_edge_visibility,
+  );
 
   if (!defined(draco) && !defined(bufferViewId)) {
     return undefined;
@@ -1468,7 +1475,10 @@ function loadIndices(
   const outputTypedArrayOnly = loadAttributesAsTypedArray;
   const outputBuffer = !outputTypedArrayOnly;
   const outputTypedArray =
-    loadAttributesAsTypedArray || loadForCpuOperations || loadForClassification;
+    loadAttributesAsTypedArray ||
+    loadForCpuOperations ||
+    loadForClassification ||
+    hasEdgeVisibility;
 
   // Determine what to load right now:
   //
@@ -1981,6 +1991,17 @@ function loadMorphTarget(
   return morphTarget;
 }
 
+function fetchSpzExtensionFrom(extensions) {
+  const gaussianSplatting = extensions?.KHR_gaussian_splatting;
+  const gsExtensions = gaussianSplatting?.extensions;
+  const spz = gsExtensions?.KHR_gaussian_splatting_compression_spz_2;
+  if (defined(spz)) {
+    return spz;
+  }
+
+  return undefined;
+}
+
 /**
  * Load resources associated with a mesh primitive for a glTF node
  * @param {GltfLoader} loader
@@ -2018,7 +2039,44 @@ function loadPrimitive(loader, gltfPrimitive, hasInstances, frameState) {
     );
   }
 
-  const spzExtension = extensions.KHR_spz_gaussian_splats_compression;
+  // Edge Visibility
+  const edgeVisibilityExtension = extensions.EXT_mesh_primitive_edge_visibility;
+  const hasEdgeVisibility = defined(edgeVisibilityExtension);
+  if (hasEdgeVisibility) {
+    const visibilityAccessor =
+      loader.gltfJson.accessors[edgeVisibilityExtension.visibility];
+    if (!defined(visibilityAccessor)) {
+      throw new RuntimeError("Edge visibility accessor not found!");
+    }
+    const visibilityValues = loadAccessor(loader, visibilityAccessor);
+    primitive.edgeVisibility = {
+      visibility: visibilityValues,
+      material: edgeVisibilityExtension.material,
+    };
+
+    // Load silhouette normals
+    if (defined(edgeVisibilityExtension.silhouetteNormals)) {
+      const silhouetteNormalsAccessor =
+        loader.gltfJson.accessors[edgeVisibilityExtension.silhouetteNormals];
+      if (defined(silhouetteNormalsAccessor)) {
+        const silhouetteNormalsValues = loadAccessor(
+          loader,
+          silhouetteNormalsAccessor,
+        );
+        primitive.edgeVisibility.silhouetteNormals = silhouetteNormalsValues;
+      }
+    }
+
+    // Load line strings
+    if (defined(edgeVisibilityExtension.lineStrings)) {
+      primitivePlan.edgeVisibility.lineStrings =
+        edgeVisibilityExtension.lineStrings;
+    }
+  }
+
+  //support the latest glTF spec and the legacy extension
+  const spzExtension = fetchSpzExtensionFrom(extensions);
+
   if (defined(spzExtension)) {
     needsPostProcessing = true;
     primitivePlan.needsGaussianSplats = true;
@@ -2089,7 +2147,6 @@ function loadPrimitive(loader, gltfPrimitive, hasInstances, frameState) {
       loader,
       indices,
       gltfPrimitive,
-      draco,
       hasFeatureIds,
       needsPostProcessing,
       frameState,
@@ -2431,7 +2488,7 @@ function loadNode(loader, gltfNode, frameState) {
   const meshId = gltfNode.mesh;
   if (defined(meshId)) {
     const mesh = loader.gltfJson.meshes[meshId];
-    const primitives = mesh.primitives;
+    const primitives = getMeshPrimitives(mesh);
     for (let i = 0; i < primitives.length; ++i) {
       node.primitives.push(
         loadPrimitive(
@@ -2827,12 +2884,12 @@ function parse(loader, frameState) {
 
   // Gather promises and handle any errors
   const readyPromises = [];
-  readyPromises.push.apply(readyPromises, loader._loaderPromises);
+  addAllToArray(readyPromises, loader._loaderPromises);
 
   // When incrementallyLoadTextures is true, the errors are caught and thrown individually
   // since it doesn't affect the overall loader state
   if (!loader._incrementallyLoadTextures) {
-    readyPromises.push.apply(readyPromises, loader._texturesPromises);
+    addAllToArray(readyPromises, loader._texturesPromises);
   }
 
   return Promise.all(readyPromises);

@@ -100,6 +100,9 @@ class ModelImagery {
     //>>includeEnd('debug');
 
     if (!this._hasImagery) {
+      // When there is no imagery, make sure to delete any model primitive
+      // imageries that may previously have been created
+      this._deleteModelPrimitiveImageries();
       return;
     }
 
@@ -215,6 +218,7 @@ class ModelImagery {
       modelPrimitiveImagery.destroy();
     }
     delete this._modelPrimitiveImageries;
+    this._model.resetDrawCommands();
   }
 
   /**
@@ -335,6 +339,9 @@ class ModelImagery {
       const imageryLayer = imageryLayers.get(i);
       const imageryConfiguration = imageryConfigurations[i];
 
+      if (imageryLayer.show !== imageryConfiguration.show) {
+        return true;
+      }
       if (imageryLayer.alpha !== imageryConfiguration.alpha) {
         return true;
       }
