@@ -1,5 +1,4 @@
 import Color from "../Core/Color.js";
-import defaultValue from "../Core/defaultValue.js";
 import defined from "../Core/defined.js";
 import Event from "../Core/Event.js";
 import createPropertyDescriptor from "./createPropertyDescriptor.js";
@@ -31,7 +30,7 @@ const defaultFadeFactor = 1;
  * @param {Property|Number} [options.fadeFactor=1.0] Property specifying the specular intensity.
  */
 function WaterMaterialProperty(options) {
-  options = defaultValue(options, defaultValue.EMPTY_OBJECT);
+  options = options ?? {};
 
   this._definitionChanged = new Event();
   this._baseWaterColor = undefined;
@@ -183,50 +182,50 @@ WaterMaterialProperty.prototype.getValue = function (time, result) {
   result.specularMap = Property.getValueOrDefault(
     this._specularMap,
     time,
-    Material.DefaultImageId
+    Material.DefaultImageId,
   );
   result.normalMap = Property.getValueOrDefault(
     this._normalMap,
     time,
-    Material.DefaultImageId
+    Material.DefaultImageId,
   );
   result.baseWaterColor = Property.getValueOrClonedDefault(
     this._baseWaterColor,
     time,
     defaultBaseWaterColor,
-    result.repeat
+    result.repeat,
   );
   result.blendColor = Property.getValueOrClonedDefault(
     this._blendColor,
     time,
     defaultBlendColor,
-    result.blendColor
+    result.blendColor,
   );
   result.frequency = Property.getValueOrClonedDefault(
     this._frequency,
     time,
     defaultFrequency,
-    result.blendColor
+    result.blendColor,
   );
   result.animationSpeed = Property.getValueOrDefault(
     this._animationSpeed,
     time,
-    defaultAnimationSpped
+    defaultAnimationSpped,
   );
   result.amplitude = Property.getValueOrDefault(
     this._amplitude,
     time,
-    defaultAmplitude
+    defaultAmplitude,
   );
   result.specularIntensity = Property.getValueOrDefault(
     this._specularIntensity,
     time,
-    defaultSpecularIntensity
+    defaultSpecularIntensity,
   );
   result.fadeFactor = Property.getValueOrDefault(
     this._fadeFactor,
     time,
-    defaultFadeFactor
+    defaultFadeFactor,
   );
 
   return result;

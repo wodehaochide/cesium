@@ -7,19 +7,16 @@ class CustomPrimitive {
     this.uniformMap = options.uniformMap;
     this.rawRenderState = options.rawRenderState;
     this.framebuffer = options.framebuffer;
-    this.autoClear = Cesium.defaultValue(options.autoClear, false);
-    this.pass = Cesium.defaultValue(options.pass, Cesium.Pass.OPAQUE);
+    this.autoClear = options.autoClear ?? false;
+    this.pass = options.pass ?? Cesium.Pass.OPAQUE;
     this.vertexShaderSource = options.vertexShaderSource;
     this.fragmentShaderSource = options.fragmentShaderSource;
-    this._modelMatrix = Cesium.defaultValue(
-      options.modelMatrix,
-      Cesium.Matrix4.IDENTITY,
-    );
+    this._modelMatrix = options.modelMatrix ?? Cesium.Matrix4.IDENTITY;
 
     this.outputTexture = options.outputTexture;
     this.preExecute = options.preExecute;
     this.postExecute = options.postExecute;
-    this.persists = Cesium.defaultValue(options.persists, false);
+    this.persists = options.persists ?? false;
 
     this.show = true;
     this.command = undefined;

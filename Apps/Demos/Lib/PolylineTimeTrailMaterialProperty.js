@@ -1,6 +1,6 @@
 /* eslint-disable */
 function PolylineTimeTrailMaterialProperty(options) {
-  options = Cesium.defaultValue(options, Cesium.defaultValue.EMPTY_OBJECT);
+  options = options ?? {};
 
   this._definitionChanged = new Cesium.Event();
 
@@ -48,7 +48,7 @@ PolylineTimeTrailMaterialProperty.prototype.getValue = function (time, result) {
     this._color,
     time,
     Cesium.Color.WHITE,
-    result.color
+    result.color,
   );
 
   result.image = this.image;
@@ -129,7 +129,7 @@ Cesium.Material._materialCache.addMaterial(
     translucent: function (material) {
       return true;
     },
-  }
+  },
 );
 
 Cesium.PolylineTimeTrailMaterialProperty = PolylineTimeTrailMaterialProperty;

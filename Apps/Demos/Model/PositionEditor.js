@@ -251,12 +251,12 @@ function addMouseEvent(handler, viewer, scope) {
     const windowOrigin = Cesium.SceneTransforms.wgs84ToWindowCoordinates(
       viewer.scene,
       origin,
-      new Cesium.Cartesian2()
+      new Cesium.Cartesian2(),
     );
     // the mouse's movement direction
     const mouseDirection = new Cesium.Cartesian2(
       movement.endPosition.x - movement.startPosition.x,
-      movement.endPosition.y - movement.startPosition.y
+      movement.endPosition.y - movement.startPosition.y,
     );
 
     const minimumScale = 0.001;
@@ -271,21 +271,21 @@ function addMouseEvent(handler, viewer, scope) {
           Cesium.Matrix4.multiplyByPoint(
             transform,
             Cesium.Cartesian3.UNIT_X,
-            targetPoint
+            targetPoint,
           );
           break;
         case "y":
           Cesium.Matrix4.multiplyByPoint(
             transform,
             Cesium.Cartesian3.UNIT_Y,
-            targetPoint
+            targetPoint,
           );
           break;
         case "z":
           Cesium.Matrix4.multiplyByPoint(
             transform,
             Cesium.Cartesian3.UNIT_Z,
-            targetPoint
+            targetPoint,
           );
           break;
         default:
@@ -298,14 +298,14 @@ function addMouseEvent(handler, viewer, scope) {
       const windowEnd = Cesium.SceneTransforms.wgs84ToWindowCoordinates(
         viewer.scene,
         targetPoint,
-        new Cesium.Cartesian2()
+        new Cesium.Cartesian2(),
       );
 
       // the axis' direction on the canvas
       const direction = Cesium.Cartesian2.subtract(
         windowEnd,
         windowOrigin,
-        new Cesium.Cartesian2()
+        new Cesium.Cartesian2(),
       );
 
       // whether the mouse is moving in the positive direction of the axis
@@ -318,25 +318,25 @@ function addMouseEvent(handler, viewer, scope) {
       const metersPerPixel = viewer.camera.getPixelSize(
         new Cesium.BoundingSphere(
           origin,
-          Cesium.Cartesian3.magnitude(transVector)
+          Cesium.Cartesian3.magnitude(transVector),
         ),
         viewer.canvas.width,
-        viewer.canvas.height
+        viewer.canvas.height,
       );
 
       Cesium.Matrix4.fromTranslation(
         Cesium.Cartesian3.multiplyByScalar(
           transVector,
           isMouseMoveInPositive * metersPerPixel * movePixelsAlongAxis,
-          new Cesium.Cartesian3()
+          new Cesium.Cartesian3(),
         ),
-        translation
+        translation,
       );
 
       const tmp = Cesium.Matrix4.multiply(
         translation,
         scope.modelMatrix,
-        new Cesium.Matrix4()
+        new Cesium.Matrix4(),
       );
 
       // apply translation
@@ -361,15 +361,15 @@ function addMouseEvent(handler, viewer, scope) {
       const startVector = Cesium.Cartesian2.subtract(
         new Cesium.Cartesian2(
           movement.startPosition.x,
-          movement.startPosition.y
+          movement.startPosition.y,
         ),
         windowOrigin,
-        new Cesium.Cartesian2()
+        new Cesium.Cartesian2(),
       );
       const endVector = Cesium.Cartesian2.subtract(
         new Cesium.Cartesian2(movement.endPosition.x, movement.endPosition.y),
         windowOrigin,
-        new Cesium.Cartesian2()
+        new Cesium.Cartesian2(),
       );
 
       // get the mouse movement direction
@@ -380,7 +380,7 @@ function addMouseEvent(handler, viewer, scope) {
       const org2Camera = Cesium.Cartesian3.subtract(
         viewer.scene.camera.position,
         origin,
-        new Cesium.Cartesian3()
+        new Cesium.Cartesian3(),
       );
 
       const rotation = new Cesium.Matrix3();
@@ -392,42 +392,42 @@ function addMouseEvent(handler, viewer, scope) {
           Cesium.Matrix4.multiplyByPointAsVector(
             scope.modelMatrix,
             Cesium.Cartesian3.UNIT_X,
-            axis
+            axis,
           );
           isCameraOnPositiveAxis =
             Cesium.Cartesian3.dot(axis, org2Camera) > 0 ? 1 : -1;
 
           Cesium.Matrix3.fromRotationX(
             angle * isCameraOnPositiveAxis * isCounterClockWise,
-            rotation
+            rotation,
           );
           break;
         case "y":
           Cesium.Matrix4.multiplyByPointAsVector(
             scope.modelMatrix,
             Cesium.Cartesian3.UNIT_Y,
-            axis
+            axis,
           );
           isCameraOnPositiveAxis =
             Cesium.Cartesian3.dot(axis, org2Camera) > 0 ? 1 : -1;
 
           Cesium.Matrix3.fromRotationY(
             angle * isCameraOnPositiveAxis * isCounterClockWise,
-            rotation
+            rotation,
           );
           break;
         case "z":
           Cesium.Matrix4.multiplyByPointAsVector(
             scope.modelMatrix,
             Cesium.Cartesian3.UNIT_Z,
-            axis
+            axis,
           );
           isCameraOnPositiveAxis =
             Cesium.Cartesian3.dot(axis, org2Camera) > 0 ? 1 : -1;
 
           Cesium.Matrix3.fromRotationZ(
             angle * isCameraOnPositiveAxis * isCounterClockWise,
-            rotation
+            rotation,
           );
           break;
         default:
@@ -438,7 +438,7 @@ function addMouseEvent(handler, viewer, scope) {
       Cesium.Matrix4.multiplyByMatrix3(
         scope.modelMatrix,
         rotation,
-        scope.modelMatrix
+        scope.modelMatrix,
       );
       const scaleValue = getScaleFromTransform(scope.item.modelMatrix);
 
@@ -446,17 +446,16 @@ function addMouseEvent(handler, viewer, scope) {
       const finalTransform = Cesium.Matrix4.multiply(
         scope.modelMatrix,
         Cesium.Matrix4.fromScale(
-          new Cesium.Cartesian3(scaleValue[0], scaleValue[1], scaleValue[2])
+          new Cesium.Cartesian3(scaleValue[0], scaleValue[1], scaleValue[2]),
         ),
-        new Cesium.Matrix4()
+        new Cesium.Matrix4(),
       );
 
       if (typeof scope.onDragMoving === "function") {
         scope.onDragMoving({
           type: EditType.ROTATE,
-          result: Cesium.Transforms.fixedFrameToHeadingPitchRoll(
-            finalTransform
-          ),
+          result:
+            Cesium.Transforms.fixedFrameToHeadingPitchRoll(finalTransform),
         });
       }
 
@@ -472,17 +471,17 @@ function addMouseEvent(handler, viewer, scope) {
       const oldScale = getScaleFromTransform(scope.item.modelMatrix);
 
       switch (pickedObject.id.axis) {
-        case "x":
+        case "x": {
           Cesium.Matrix4.multiplyByPoint(
             scope.modelMatrix,
             Cesium.Cartesian3.UNIT_X,
-            targetPoint
+            targetPoint,
           );
 
           Cesium.SceneTransforms.wgs84ToDrawingBufferCoordinates(
             viewer.scene,
             targetPoint,
-            windowEnd
+            windowEnd,
           );
           Cesium.Cartesian2.subtract(windowEnd, windowOrigin, direction);
 
@@ -490,25 +489,28 @@ function addMouseEvent(handler, viewer, scope) {
           const scalex =
             Cesium.Cartesian2.dot(direction, mouseDirection) > 0 ? 1.05 : 0.95;
 
-          if (oldScale[0] <= minimumScale && scalex === 0.95) return;
+          if (oldScale[0] <= minimumScale && scalex === 0.95) {
+            return;
+          }
 
           Cesium.Matrix4.fromScale(
             new Cesium.Cartesian3(scalex, 1, 1),
-            scaleMatrix
+            scaleMatrix,
           );
 
           break;
-        case "y":
+        }
+        case "y": {
           Cesium.Matrix4.multiplyByPoint(
             scope.modelMatrix,
             Cesium.Cartesian3.UNIT_Y,
-            targetPoint
+            targetPoint,
           );
 
           Cesium.SceneTransforms.wgs84ToDrawingBufferCoordinates(
             viewer.scene,
             targetPoint,
-            windowEnd
+            windowEnd,
           );
           Cesium.Cartesian2.subtract(windowEnd, windowOrigin, direction);
 
@@ -517,22 +519,25 @@ function addMouseEvent(handler, viewer, scope) {
 
           Cesium.Matrix4.fromScale(
             new Cesium.Cartesian3(1, scaley, 1),
-            scaleMatrix
+            scaleMatrix,
           );
 
-          if (oldScale[1] <= minimumScale && scaley === 0.95) return;
+          if (oldScale[1] <= minimumScale && scaley === 0.95) {
+            return;
+          }
           break;
-        case "z":
+        }
+        case "z": {
           Cesium.Matrix4.multiplyByPoint(
             scope.modelMatrix,
             Cesium.Cartesian3.UNIT_Z,
-            targetPoint
+            targetPoint,
           );
 
           Cesium.SceneTransforms.wgs84ToDrawingBufferCoordinates(
             viewer.scene,
             targetPoint,
-            windowEnd
+            windowEnd,
           );
           Cesium.Cartesian2.subtract(windowEnd, windowOrigin, direction);
 
@@ -541,10 +546,13 @@ function addMouseEvent(handler, viewer, scope) {
 
           Cesium.Matrix4.fromScale(
             new Cesium.Cartesian3(1, 1, scalez),
-            scaleMatrix
+            scaleMatrix,
           );
-          if (oldScale[2] <= minimumScale && scalez === 0.95) return;
+          if (oldScale[2] <= minimumScale && scalez === 0.95) {
+            return;
+          }
           break;
+        }
 
         default:
           break;
@@ -553,7 +561,7 @@ function addMouseEvent(handler, viewer, scope) {
       const finalTransform = Cesium.Matrix4.multiply(
         scope.item.modelMatrix,
         scaleMatrix,
-        new Cesium.Matrix4()
+        new Cesium.Matrix4(),
       );
       if (typeof scope.onDragMoving === "function") {
         scope.onDragMoving({
@@ -569,10 +577,10 @@ function addMouseEvent(handler, viewer, scope) {
       const windowOriginToMouseVecotr = Cesium.Cartesian2.subtract(
         new Cesium.Cartesian2(
           movement.startPosition.x,
-          movement.startPosition.y
+          movement.startPosition.y,
         ),
         windowOrigin,
-        new Cesium.Cartesian2()
+        new Cesium.Cartesian2(),
       );
 
       // whether the mouse moves outward
@@ -583,16 +591,18 @@ function addMouseEvent(handler, viewer, scope) {
 
       const scaleMatrix = Cesium.Matrix4.fromUniformScale(
         scale,
-        new Cesium.Matrix4()
+        new Cesium.Matrix4(),
       );
 
       const oldScale = getScaleFromTransform(scope.item.modelMatrix);
-      if (oldScale[0] <= minimumScale && scale === 0.95) return;
+      if (oldScale[0] <= minimumScale && scale === 0.95) {
+        return;
+      }
 
       const finalTransform = Cesium.Matrix4.multiply(
         scope.item.modelMatrix,
         scaleMatrix,
-        new Cesium.Matrix4()
+        new Cesium.Matrix4(),
       );
 
       if (typeof scope.onDragMoving === "function") {
@@ -633,14 +643,19 @@ function addMouseEvent(handler, viewer, scope) {
  * }));
  */
 function PositionEditor(options) {
-  options = Cesium.defaultValue(options, Cesium.defaultValue.EMPTY_OBJECT);
+  options = options ?? {};
 
-  if (!Cesium.defined(options.viewer))
-    new Cesium.DeveloperError("Viewer must be assigned!");
-  if (!Cesium.defined(options.item))
-    new Cesium.DeveloperError("Item must be assigned!");
-  if (!Cesium.defined(options.item.modelMatrix))
-    new Cesium.DeveloperError("Item must have the modelMatrix attribute!");
+  if (!Cesium.defined(options.viewer)) {
+    throw new Cesium.DeveloperError("Viewer must be assigned!");
+  }
+  if (!Cesium.defined(options.item)) {
+    throw new Cesium.DeveloperError("Item must be assigned!");
+  }
+  if (!Cesium.defined(options.item.modelMatrix)) {
+    throw new Cesium.DeveloperError(
+      "Item must have the modelMatrix attribute!",
+    );
+  }
 
   this.viewer = options.viewer;
   this.item = options.item;
@@ -651,7 +666,7 @@ function PositionEditor(options) {
    * @type {Number}
    * @default 300.0
    */
-  this.length = Cesium.defaultValue(options.length, 300.0);
+  this.length = options.length ?? 300.0;
   this._length = undefined;
 
   /**
@@ -660,7 +675,7 @@ function PositionEditor(options) {
    * @type {Number}
    * @default 20
    */
-  this.width = Cesium.defaultValue(options.width, 20);
+  this.width = options.width ?? 20;
   this._width = undefined;
 
   /**
@@ -669,7 +684,7 @@ function PositionEditor(options) {
    * @type Boolean
    * @default true
    */
-  this.show = Cesium.defaultValue(options.show, true);
+  this.show = options.show ?? true;
 
   /**
    * User-Cesium.defined value returned when the primitive is picked.
@@ -682,29 +697,26 @@ function PositionEditor(options) {
   this.id = options.id;
   this._id = undefined;
 
-  this.type = Cesium.defaultValue(options.type, EditType.TRANSLATE);
+  this.type = options.type ?? EditType.TRANSLATE;
   this._type = undefined;
 
-  this.xColor = Cesium.defaultValue(options.xColor, Cesium.Color.RED);
+  this.xColor = options.xColor ?? Cesium.Color.RED;
   this._xColor = undefined;
   this._xOriginColor = this.xColor;
-  this.yColor = Cesium.defaultValue(options.yColor, Cesium.Color.GREEN);
+  this.yColor = options.yColor ?? Cesium.Color.GREEN;
   this._yColor = undefined;
   this._yOriginColor = this.yColor;
-  this.zColor = Cesium.defaultValue(options.zColor, Cesium.Color.BLUE);
+  this.zColor = options.zColor ?? Cesium.Color.BLUE;
   this._zColor = undefined;
   this._zOriginColor = this.zColor;
-  this.highlightColor = Cesium.defaultValue(
-    options.highlightColor,
-    Cesium.Color.YELLOW
-  );
+  this.highlightColor = options.highlightColor ?? Cesium.Color.YELLOW;
   this._highlightColor = undefined;
 
   this._primitive = undefined;
 
   this._itemMatrix = options.item.modelMatrix.clone();
 
-  this.applyTransform = Cesium.defaultValue(options.applyTransform, true);
+  this.applyTransform = options.applyTransform ?? true;
 
   this.onDragMoving = options.onDragMoving;
   this.onDragStart = options.onDragStart;
@@ -725,7 +737,7 @@ function scaleInPixels(positionWC, radius, frameState) {
   return frameState.camera.getPixelSize(
     scratchBoundingSphere,
     frameState.context.drawingBufferWidth,
-    frameState.context.drawingBufferHeight
+    frameState.context.drawingBufferHeight,
   );
 }
 
@@ -737,7 +749,7 @@ function getScale(model, frameState) {
   const context = frameState.context;
   const maxPixelSize = Math.max(
     context.drawingBufferWidth,
-    context.drawingBufferHeight
+    context.drawingBufferHeight,
   );
   const m = model.modelMatrix;
   scratchPosition.x = m[12];
@@ -748,14 +760,14 @@ function getScale(model, frameState) {
     const projection = frameState.mapProjection;
     const cartographic = projection.ellipsoid.cartesianToCartographic(
       scratchPosition,
-      scratchCartographic
+      scratchCartographic,
     );
     projection.project(cartographic, scratchPosition);
     Cesium.Cartesian3.fromElements(
       scratchPosition.z,
       scratchPosition.x,
       scratchPosition.y,
-      scratchPosition
+      scratchPosition,
     );
   }
 
@@ -767,7 +779,7 @@ function getScale(model, frameState) {
   const pixelsPerMeter = 1.0 / metersPerPixel;
   const diameterInPixels = Math.min(
     pixelsPerMeter * 2.0 * radius,
-    maxPixelSize
+    maxPixelSize,
   );
 
   let scale = 1;
@@ -818,8 +830,8 @@ PositionEditor.prototype.update = function (frameState) {
       // remove the scaling transform but keep the translation and rotation
       // shouldn't be zero
       if (scale[0] === 0 || scale[1] === 0 || scale[2] === 0) {
-        new Cesium.DeveloperError(
-          "Can't get transform infomation from modelMatrix since scale is 0."
+        throw new Cesium.DeveloperError(
+          "Can't get transform infomation from modelMatrix since scale is 0.",
         );
       }
       m[0] /= scale[0];
@@ -895,8 +907,8 @@ PositionEditor.prototype.update = function (frameState) {
           Cesium.Matrix3.multiplyByVector(
             Cesium.Matrix3.fromRotationX((i * (2 * Cesium.Math.PI)) / counts),
             Cesium.Cartesian3.UNIT_Y,
-            new Cesium.Cartesian3()
-          )
+            new Cesium.Cartesian3(),
+          ),
         );
       }
       for (let i = 0; i <= counts; i += 1) {
@@ -904,8 +916,8 @@ PositionEditor.prototype.update = function (frameState) {
           Cesium.Matrix3.multiplyByVector(
             Cesium.Matrix3.fromRotationY((i * (2 * Cesium.Math.PI)) / counts),
             Cesium.Cartesian3.UNIT_Z,
-            new Cesium.Cartesian3()
-          )
+            new Cesium.Cartesian3(),
+          ),
         );
       }
       for (let i = 0; i <= counts; i += 1) {
@@ -913,8 +925,8 @@ PositionEditor.prototype.update = function (frameState) {
           Cesium.Matrix3.multiplyByVector(
             Cesium.Matrix3.fromRotationZ((i * (2 * Cesium.Math.PI)) / counts),
             Cesium.Cartesian3.UNIT_X,
-            new Cesium.Cartesian3()
-          )
+            new Cesium.Cartesian3(),
+          ),
         );
       }
     }
@@ -936,7 +948,7 @@ PositionEditor.prototype.update = function (frameState) {
       attributes: {
         color: Cesium.ColorGeometryInstanceAttribute.fromColor(this.xColor),
         depthFailColor: Cesium.ColorGeometryInstanceAttribute.fromColor(
-          Cesium.Color.multiplyByScalar(this.xColor, 0.5, new Cesium.Color())
+          Cesium.Color.multiplyByScalar(this.xColor, 0.5, new Cesium.Color()),
         ),
       },
     });
@@ -955,7 +967,7 @@ PositionEditor.prototype.update = function (frameState) {
       attributes: {
         color: Cesium.ColorGeometryInstanceAttribute.fromColor(this.yColor),
         depthFailColor: Cesium.ColorGeometryInstanceAttribute.fromColor(
-          Cesium.Color.multiplyByScalar(this.yColor, 0.5, new Cesium.Color())
+          Cesium.Color.multiplyByScalar(this.yColor, 0.5, new Cesium.Color()),
         ),
       },
     });
@@ -974,7 +986,7 @@ PositionEditor.prototype.update = function (frameState) {
       attributes: {
         color: Cesium.ColorGeometryInstanceAttribute.fromColor(this.zColor),
         depthFailColor: Cesium.ColorGeometryInstanceAttribute.fromColor(
-          Cesium.Color.multiplyByScalar(this.zColor, 0.5, new Cesium.Color())
+          Cesium.Color.multiplyByScalar(this.zColor, 0.5, new Cesium.Color()),
         ),
       },
     });
@@ -999,7 +1011,7 @@ PositionEditor.prototype.update = function (frameState) {
   const scaledMatrix = Cesium.Matrix4.multiplyByUniformScale(
     this.modelMatrix,
     scale,
-    new Cesium.Matrix4()
+    new Cesium.Matrix4(),
   );
 
   this._primitive.modelMatrix = scaledMatrix;

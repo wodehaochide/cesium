@@ -3,7 +3,7 @@
 
 /* eslint-disable */
 function PolylineTrailMaterial2Property(options) {
-  options = Cesium.defaultValue(options, Cesium.defaultValue.EMPTY_OBJECT);
+  options = options ?? {};
 
   this._definitionChanged = new Cesium.Event();
 
@@ -53,7 +53,7 @@ PolylineTrailMaterial2Property.prototype.getValue = function (time, result) {
     this._color,
     time,
     Cesium.Color.WHITE,
-    result.color
+    result.color,
   );
 
   result.image = Cesium.Material.PolylineTrailImage2;

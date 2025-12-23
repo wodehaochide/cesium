@@ -303,10 +303,7 @@ export default class Erosion extends Cesium.Primitive {
     this.waterLevel = 0.34;
     this._showLines = false;
 
-    this.resolution = Cesium.defaultValue(
-      options.resolution,
-      new Cesium.Cartesian2(1024, 1024)
-    );
+    this.resolution = options.resolution ?? new Cesium.Cartesian2(1024, 1024);
   }
   createCommand(context) {
     const polygon = new Cesium.PolygonGeometry({
@@ -322,11 +319,10 @@ export default class Erosion extends Cesium.Primitive {
       geometry,
       "position",
       "positionHigh",
-      "positionLow"
+      "positionLow",
     );
-    const attributeLocations = Cesium.GeometryPipeline.createAttributeLocations(
-      geometry
-    );
+    const attributeLocations =
+      Cesium.GeometryPipeline.createAttributeLocations(geometry);
 
     const va = Cesium.VertexArray.fromGeometry({
       context: context,
@@ -447,7 +443,7 @@ export default class Erosion extends Cesium.Primitive {
         };
         drawCommand.uniformMap = undefined;
         drawCommand.renderState = Cesium.RenderState.removeFromCache(
-          drawCommand.renderState
+          drawCommand.renderState,
         );
       }
     });

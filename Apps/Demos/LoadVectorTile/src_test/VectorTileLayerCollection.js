@@ -1,7 +1,6 @@
 import {
   defined,
   DeveloperError,
-  defaultValue,
   destroyObject,
   Event,
 } from "../../../../Build/CesiumUnminified/index.js";
@@ -72,7 +71,7 @@ export default class VectorTileLayerCollection {
   }
 
   remove(layer, destroy) {
-    destroy = defaultValue(destroy, true);
+    destroy = destroy ?? true;
 
     const index = this._layers.indexOf(layer);
     if (index !== -1) {
@@ -93,7 +92,7 @@ export default class VectorTileLayerCollection {
   }
 
   removeAll(destroy) {
-    destroy = defaultValue(destroy, true);
+    destroy = destroy ?? true;
 
     const layers = this._layers;
     for (let i = 0, len = layers.length; i < len; i++) {

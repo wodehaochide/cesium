@@ -65,10 +65,7 @@ function render(scene) {
   frameState.passes.postProcess = scene.postProcessStages.hasSelected;
   frameState.tilesetPassState = renderTilesetPassState;
 
-  let backgroundColor = Cesium.defaultValue(
-    scene.backgroundColor,
-    Cesium.Color.BLACK,
-  );
+  let backgroundColor = scene.backgroundColor ?? Cesium.Color.BLACK;
   if (scene._hdr) {
     backgroundColor = Cesium.Color.clone(
       backgroundColor,

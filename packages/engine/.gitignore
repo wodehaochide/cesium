@@ -11,3 +11,5 @@ Source/ThirdParty/zip-module.wasm
 Source/ThirdParty/Workers/draco_decoder_nodejs.js
 Source/ThirdParty/Workers/zip-web-worker.js
 Source/ThirdParty/Workers/z-worker-pako.js
+Source/ThirdParty/Workers/*.min.js
+node_modules

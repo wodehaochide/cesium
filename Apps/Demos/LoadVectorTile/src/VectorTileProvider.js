@@ -7,12 +7,10 @@ export default class VectorTileProvider {
   constructor(options = {}) {
     this._options = options;
 
-    this._tilingScheme = Cesium.defaultValue(
-      options.tilingScheme,
-      new Cesium.WebMercatorTilingScheme(),
-    );
-    this._minimumLevel = Cesium.defaultValue(options.minimumLevel, 0);
-    this._maximumLevel = Cesium.defaultValue(options.maximumLevel, 18);
+    this._tilingScheme =
+      options.tilingScheme ?? new Cesium.WebMercatorTilingScheme();
+    this._minimumLevel = options.minimumLevel ?? 0;
+    this._maximumLevel = options.maximumLevel ?? 18;
 
     this._resource = new Cesium.Resource({
       url: options.url,
