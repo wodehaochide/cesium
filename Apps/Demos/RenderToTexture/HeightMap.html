@@ -34,6 +34,7 @@
   <body>
     <div id="cesiumContainer"></div>
     <script type="module">
+      // import IndexedDbCache from "../Lib/indexDbCache.js";
       import * as Cesium from "../../../../Build/CesiumUnminified/index.js";
       window.CESIUM_BASE_URL = "../../../../Build/CesiumUnminified/";
       window.Cesium = Cesium;
@@ -42,15 +43,9 @@
 
       const WIDTH = 512;
 
-      const ViewType = {
-        Overlooking: "Overlooking",
-        Telescope: "Telescope",
-      };
-
       class CustomRenderer {
-        constructor(viewer, type) {
+        constructor(viewer) {
           this.viewer = viewer;
-          this.type = type;
           this.view = undefined;
           this.viewport = undefined;
           this.camera = undefined;
@@ -61,7 +56,7 @@
           this.initialized = false;
           this.renderPassState = undefined;
           this.drawPassState = undefined;
-          // 将使用自定义渲染循环
+
           viewer.cesiumWidget.useDefaultRenderLoop = false;
 
           this._initialize(viewer.scene.context);
@@ -87,6 +82,7 @@
             scene._defaultView = this.view;
             scene._view = this.view;
             scene.camera = this.camera;
+            this.clearCommand.execute(scene.context, this.renderPassState);
             this._render(scene);
 
             // 绘制到屏幕右上角
@@ -106,50 +102,37 @@
         _updateCamera(originCamera) {
           this.camera.position = originCamera.position.clone();
 
-          if (this.type === ViewType.Overlooking) {
-            // 俯瞰效果，计算俯瞰相机位置和姿态
-            const enuMatrix = Cesium.Transforms.eastNorthUpToFixedFrame(
-              this.camera.position,
-            );
+          // 俯瞰
+          const enuMatrix = Cesium.Transforms.eastNorthUpToFixedFrame(
+            this.camera.position,
+          );
 
-            this.camera.direction = Cesium.Matrix4.getColumn(
-              enuMatrix,
-              2,
-              new Cesium.Cartesian3(),
-            );
-            Cesium.Cartesian3.negate(
-              this.camera.direction,
-              this.camera.direction,
-            );
-            this.camera.up = Cesium.Matrix4.getColumn(
-              enuMatrix,
-              1,
-              new Cesium.Cartesian3(),
-            );
-            this.camera.right = Cesium.Matrix4.getColumn(
-              enuMatrix,
-              0,
-              new Cesium.Cartesian3(),
-            );
+          this.camera.direction = Cesium.Matrix4.getColumn(
+            enuMatrix,
+            2,
+            new Cesium.Cartesian3(),
+          );
+          Cesium.Cartesian3.negate(
+            this.camera.direction,
+            this.camera.direction,
+          );
+          this.camera.up = Cesium.Matrix4.getColumn(
+            enuMatrix,
+            1,
+            new Cesium.Cartesian3(),
+          );
+          this.camera.right = Cesium.Matrix4.getColumn(
+            enuMatrix,
+            0,
+            new Cesium.Cartesian3(),
+          );
 
-            const halfRange =
-              Math.tan(originCamera.frustum.fov / 2) *
-              originCamera.positionCartographic.height;
-            const frustum = this.camera.frustum;
-            frustum.left = -halfRange;
-            frustum.right = halfRange;
-            frustum.bottom = -halfRange;
-            frustum.top = halfRange;
-          } else {
-            // 其他效果，保持相机方向和姿态
-            this.camera.direction = originCamera.direction.clone();
-            this.camera.up = originCamera.up.clone();
-            this.camera.right = originCamera.right.clone();
-          }
+          // this.camera.direction = originCamera.direction.clone();
+          // this.camera.up = originCamera.up.clone();
+          // this.camera.right = originCamera.right.clone();
         }
 
         _render(scene) {
-          /** 参考Scene中内部render方法 */
           const frameState = scene._frameState;
 
           const context = scene.context;
@@ -180,27 +163,27 @@
           }
           frameState.backgroundColor = backgroundColor;
 
-          frameState.atmosphere = scene.atmosphere;
-          scene.fog.update(frameState);
+          // frameState.atmosphere = scene.atmosphere;
+          // scene.fog.update(frameState);
 
           uniformState.update(frameState);
 
-          const shadowMap = scene.shadowMap;
-          if (shadowMap && shadowMap.enabled) {
-            if (!scene.light || scene.light instanceof Cesium.SunLight) {
-              // Negate the sun direction so that it is from the Sun, not to the Sun
-              Cesium.Cartesian3.negate(
-                uniformState.sunDirectionWC,
-                scene._shadowMapCamera.direction,
-              );
-            } else {
-              Cesium.Cartesian3.clone(
-                scene.light.direction,
-                scene._shadowMapCamera.direction,
-              );
-            }
-            frameState.shadowMaps.push(shadowMap);
-          }
+          // const shadowMap = scene.shadowMap;
+          // if (shadowMap && shadowMap.enabled) {
+          //   if (!scene.light || scene.light instanceof Cesium.SunLight) {
+          //     // Negate the sun direction so that it is from the Sun, not to the Sun
+          //     Cesium.Cartesian3.negate(
+          //       uniformState.sunDirectionWC,
+          //       scene._shadowMapCamera.direction,
+          //     );
+          //   } else {
+          //     Cesium.Cartesian3.clone(
+          //       scene.light.direction,
+          //       scene._shadowMapCamera.direction,
+          //     );
+          //   }
+          //   frameState.shadowMaps.push(shadowMap);
+          // }
 
           scene._computeCommandList.length = 0;
           scene._overlayCommandList.length = 0;
@@ -220,17 +203,81 @@
             passState.viewport,
           );
 
-          // 避免地表闪烁，不重新开始地表渲染
           // if (scene.globe) {
           //   scene.globe.beginFrame(frameState);
           // }
 
-          scene.updateEnvironment();
-          scene.updateAndExecuteCommands(passState, backgroundColor);
-          scene.resolveFramebuffers(passState);
+          // scene.updateEnvironment();
+          // scene.updateAndExecuteCommands(passState, backgroundColor);
 
           // passState.framebuffer = undefined;
           // executeOverlayCommands(scene, passState);
+
+          /** updateAndRenderPrimitives */
+          scene._groundPrimitives.update(frameState);
+          scene._primitives.update(frameState);
+
+          // updateDebugFrustumPlanes(scene);
+          // updateShadowMaps(scene);
+
+          if (scene._globe) {
+            scene._globe.render(frameState);
+          }
+          /** updateAndRenderPrimitives - end */
+
+          this.view.createPotentiallyVisibleSet(scene);
+
+          uniformState.updateCamera(this.camera);
+          uniformState.updatePass(Cesium.Pass.GLOBE);
+
+          // globe相关绘制指令
+          const commands = [];
+          const frustumCommandsList = this.view.frustumCommandsList;
+          for (let i = 0; i < frustumCommandsList.length; ++i) {
+            const frustumCommands = frustumCommandsList[i];
+            const length = frustumCommands.indices[Cesium.Pass.GLOBE];
+            if (length > 0) {
+              commands.push(
+                ...frustumCommands.commands[Cesium.Pass.GLOBE].slice(0, length),
+              );
+            }
+          }
+
+          passState.framebuffer = this.framebuffer;
+
+          commands.forEach((command) => {
+            // 将坐标转为ENU局部坐标，z值即为高度
+            command.uniformMap.u_inverseEnuMatrix = () => {
+              const enuMatrix = Cesium.Transforms.eastNorthUpToFixedFrame(
+                Cesium.Cartesian3.fromRadians(
+                  this.camera.positionCartographic.longitude,
+                  this.camera.positionCartographic.latitude,
+                  0,
+                ),
+              );
+              const localMat4 = Cesium.Matrix4.inverse(
+                enuMatrix,
+                new Cesium.Matrix4(),
+              );
+              return Cesium.Matrix4.multiply(
+                localMat4,
+                scene.frameState.context.uniformState.model, // 当前模型矩阵
+                new Cesium.Matrix4(),
+              );
+            };
+            if (!command.heightMap_ShaderProgram) {
+              command.heightMap_ShaderProgram = this._getDerivedShaderProgram(
+                scene.frameState.context,
+                command.shaderProgram,
+                "Height_Map",
+              );
+            }
+            command.shaderProgram = command.heightMap_ShaderProgram;
+
+            command.execute(scene.context, this.renderPassState);
+          });
+
+          // scene.resolveFramebuffers(passState);
 
           // if (scene.globe) {
           //   scene.globe.endFrame(frameState);
@@ -244,7 +291,7 @@
         }
 
         _initialize(context) {
-          this._createCamera(this.type);
+          this._createCamera();
 
           this.viewport = new Cesium.BoundingRectangle(0, 0, WIDTH, WIDTH);
 
@@ -260,7 +307,7 @@
             height: WIDTH,
             context,
             pixelFormat: Cesium.PixelFormat.RGBA,
-            pixelDatatype: Cesium.PixelDatatype.UNSIGNED_BYTE,
+            pixelDatatype: Cesium.PixelDatatype.FLOAT,
             flipX: false,
             flipY: false,
           });
@@ -281,9 +328,10 @@
             this.framebuffer;
 
           this.clearCommand = new Cesium.ClearCommand({
-            color: new Cesium.Color(0.0, 0.0, 0.0, 0.0),
+            color: new Cesium.Color(1.0, 0.0, 0.0, 0.0),
             framebuffer: this.framebuffer,
             pass: Cesium.Pass.OPAQUE,
+            depth: 1,
           });
 
           this.renderPassState = new Cesium.PassState(context);
@@ -298,29 +346,24 @@
           this.initialized = true;
         }
 
-        _createCamera(type) {
-          const camera = Cesium.Camera.clone(this.viewer.camera);
-          if (type === ViewType.Overlooking) {
-            const halfRange = 100;
-            camera.frustum = new Cesium.OrthographicOffCenterFrustum({
-              left: -halfRange,
-              right: halfRange,
-              bottom: -halfRange,
-              top: halfRange,
-              near: 0.1,
-              far: 1e10,
-            });
-          } else if (type === ViewType.Telescope) {
-            camera.frustum = this.viewer.camera.frustum.clone();
-            camera.frustum.fov = Cesium.Math.toRadians(5);
-          }
+        _createCamera() {
+          const camera = new Cesium.Camera(this.viewer.scene);
+          const halfRange = 5000;
+          camera.frustum = new Cesium.OrthographicOffCenterFrustum({
+            left: -halfRange,
+            right: halfRange,
+            bottom: -halfRange,
+            top: halfRange,
+            near: 0.1,
+            far: 1e10,
+          });
 
           camera.name = "custom";
 
           this.camera = camera;
         }
 
-        // 绘制到屏幕
+        // 绘制到屏幕右上角
         _createDrawCommands(context) {
           const drawGeometry = new Cesium.Geometry({
             attributes: {
@@ -370,7 +413,7 @@
 
           const drawCommand = new Cesium.DrawCommand({
             modelMatrix: Cesium.Matrix4.IDENTITY,
-            pass: Cesium.Pass.OVERLAY,
+            pass: Cesium.Pass.OPAQUE,
             shaderProgram: shaderProgram,
             renderState: Cesium.RenderState.fromCache({
               depthTest: {
@@ -396,20 +439,76 @@
 
           return drawCommand;
         }
+
+        _getDerivedShaderProgram(context, baseShaderProgram, passName) {
+          let derivedProgram = context.shaderCache.getDerivedShaderProgram(
+            baseShaderProgram,
+            passName,
+          );
+
+          if (!Cesium.defined(derivedProgram)) {
+            derivedProgram = this._createHeightMapShaderProgram(
+              context,
+              baseShaderProgram,
+              passName,
+            );
+          }
+
+          return derivedProgram;
+        }
+
+        _createHeightMapShaderProgram(context, baseShaderProgram, passName) {
+          const newFS = this._modifyFragmentShader(
+            baseShaderProgram.fragmentShaderSource,
+          );
+
+          return context.shaderCache.createDerivedShaderProgram(
+            baseShaderProgram,
+            passName,
+            {
+              vertexShaderSource: baseShaderProgram.vertexShaderSource,
+              fragmentShaderSource: newFS,
+              attributeLocations: baseShaderProgram._attributeLocations,
+            },
+          );
+        }
+
+        _modifyFragmentShader(originFS) {
+          const modifiedSources = originFS.sources.map((source) =>
+            Cesium.ShaderSource.replaceMain(source, "old_main"),
+          );
+
+          modifiedSources.push(`
+            uniform mat4 u_inverseEnuMatrix;
+            void main() {
+              old_main();
+              vec3 posEnu = (u_inverseEnuMatrix * vec4(v_positionMC, 1.0)).xyz;
+              out_FragColor = vec4(vec3(posEnu.z), 1.0);
+            }
+          `);
+
+          return new Cesium.ShaderSource({
+            sources: modifiedSources,
+            defines: originFS.defines,
+          });
+        }
       }
 
       const viewer = new Cesium.Viewer("cesiumContainer");
       window._viewer = viewer;
-
-      const renderer = new CustomRenderer(viewer, ViewType.Telescope);
-      renderer.start();
-
-      Cesium.createOsmBuildingsAsync().then((tileset) => {
-        viewer.scene.primitives.add(tileset);
+      Cesium.createWorldTerrainAsync().then((terrainProvider) => {
+        viewer.terrainProvider = terrainProvider;
       });
 
+      const renderer = new CustomRenderer(viewer);
+      renderer.start();
+
+      // Cesium.createOsmBuildingsAsync().then((tileset) => {
+      //   viewer.scene.primitives.add(tileset);
+      // });
+
       viewer.camera.setView({
-        destination: Cesium.Cartesian3.fromRadians(2.120474, 0.545213, 945),
+        destination: Cesium.Cartesian3.fromRadians(1.987772, 0.45262, 1601.8),
         orientation: {
           heading: 0,
           pitch: Cesium.Math.toRadians(-45),
